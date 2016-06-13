@@ -15,6 +15,7 @@ function site_information_form_alter(&$form, &$form_state, $form_id) {
 	);
 	//override form submit
   $form['#submit'][] = 'site_information_form_submit';
+	//override form validate
   $form['#validate'][] = 'site_information_form_validate';
   }
 }
