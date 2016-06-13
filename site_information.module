@@ -1,0 +1,73 @@
+<?php
+
+/*
+ * Implementation of hook_form_alter
+ */
+function site_information_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'system_site_information_settings') {
+    if(variable_get('siteapikey')){
+    $form['actions']['submit']['#value'] = "Update Configuration";
+	}
+  $form['site_information']['siteapikey'] = array(
+	  '#type' => 'textfield',
+	  '#title' => t('Site API Key'),
+	  '#default_value' => variable_get('siteapikey') ? variable_get('siteapikey') : t('No API Key yet'),
+	);
+	//override form submit
+  $form['#submit'][] = 'site_information_form_submit';
+  $form['#validate'][] = 'site_information_form_validate';
+  }
+}
+
+/*
+ * Validation handler for site information form
+ */
+function site_information_form_validate($form, &$form_state){
+  if(isset($form_state['values']['siteapikey']) && !empty($form_state['values']['siteapikey'])){
+    drupal_set_message(t('Site API Key has been saved with '. variable_get('siteapikey') .' value'));
+  }
+}
+
+/*
+ * Submit handler for site information form
+ */
+function site_information_form_submit($form, &$form_state){
+  if(isset($form_state['values']['siteapikey']) && !empty($form_state['values']['siteapikey'])){
+    if(!ctype_alnum($form_state['values']['siteapikey'])){
+		  form_set_error('siteapikey', t('Please enter valid Site api key'));
+		}
+  }
+}
+
+/*
+ * Implementation of hook_menu
+ */
+function site_information_menu() {
+	$items['page_json/%/%'] = array(
+		'title' => 'Json Page',
+		'description' => 'JSON representation of a given node',
+		'type' => MENU_NORMAL_ITEM,
+		'page callback' => 'json_node_page',
+		'page arguments' => array(1,2),
+		'access callback' => TRUE,
+    );
+	return $items;
+}
+
+/*
+ * Callback function for JSON representation of a given node
+ */
+function json_node_page($api_key, $node_id){
+  if (is_numeric($node_id) && variable_get('siteapikey') == $api_key) {
+	  $node = node_load($node_id);
+		if ($node != false && $node->type == 'page') {
+			return drupal_json_encode($node);
+		} else {
+		   drupal_access_denied();
+		   drupal_exit();
+		}
+	} else {
+	    drupal_access_denied();
+	    drupal_exit();
+	}
+}
